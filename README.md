@@ -8,6 +8,10 @@ Local chat UI for `mlx_lm.server` with:
 - automatic idle sleep so MLX does not stay hot forever
 - macOS packaging via PyInstaller
 
+## Screenshot
+
+![Bonsai Chat screenshot](assets/bonsai-chat-screenshot.png)
+
 ## Files
 
 - `bonsai.py`: local HTTP app and MLX process manager

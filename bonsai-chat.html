@@ -123,6 +123,20 @@ const history = [];
 let streaming = false;
 let appConfig = null;
 let lastModelInfo = null;
+const params = new URLSearchParams(window.location.search);
+let demoApplied = false;
+
+function isDemoMode() {
+  return params.get('demo') === '1';
+}
+
+function demoPrompt() {
+  return params.get('demoPrompt') || 'Give me a quick intro to Bonsai Chat.';
+}
+
+function demoReply() {
+  return params.get('demoReply') || "Hi there! I'm Bonsai Chat for macOS.\nI can switch local MLX models and wake on demand.\nI also check Hugging Face before downloading a new model.";
+}
 
 function apiBase() {
   return document.getElementById('serverUrl').value.trim().replace(/\/$/, '');
@@ -317,13 +331,44 @@ function renderSearchResults(results) {
   });
 }
 
+function applyDemoState() {
+  if (!isDemoMode() || demoApplied) return;
+  demoApplied = true;
+
+  const model = (appConfig && appConfig.active_model) || (appConfig && appConfig.model) || 'prism-ml/Ternary-Bonsai-8B-mlx-2bit';
+  document.getElementById('modelInput').value = model;
+
+  const prompt = demoPrompt();
+  const reply = demoReply();
+
+  history.length = 0;
+  document.getElementById('messages').innerHTML = '';
+  addMsg('user', prompt);
+  addMsg('assistant', reply);
+  history.push({role: 'user', content: prompt});
+  history.push({role: 'assistant', content: reply});
+
+  setError('');
+  setModelStatus('');
+  if (!appConfig) {
+    document.getElementById('subhead').textContent = `Current model: ${model}`;
+    document.getElementById('runtimeInfo').textContent = 'MLX: running · demo mode preview';
+    setDot('running');
+  }
+}
+
 async function loadConfig() {
   try {
     const config = await getJson(apiBase() + '/bonsai/config');
     syncConfig(config);
+    applyDemoState();
   } catch (error) {
-    setDot('error');
-    setError(error.message || 'Could not load config');
+    if (isDemoMode()) {
+      applyDemoState();
+    } else {
+      setDot('error');
+      setError(error.message || 'Could not load config');
+    }
   }
 }
 
@@ -495,8 +540,13 @@ async function sendMessage() {
   textarea.focus();
 }
 
+const requestedServer = params.get('server');
+const requestedModel = params.get('model');
+if (requestedServer) document.getElementById('serverUrl').value = requestedServer;
+if (requestedModel) document.getElementById('modelInput').value = requestedModel;
+
 loadConfig();
-setInterval(loadConfig, 5000);
+if (!isDemoMode()) setInterval(loadConfig, 5000);
 document.getElementById('prompt').focus();
 </script>
 </body>
