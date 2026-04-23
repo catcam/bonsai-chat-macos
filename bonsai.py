@@ -20,6 +20,8 @@ from pathlib import Path
 
 
 APP_NAME = "BonsaiChat"
+APP_VERSION = "1.0.0"
+APP_SIGNATURE = "Nikša Barlović + Codex"
 DEFAULT_MODEL = "prism-ml/Ternary-Bonsai-8B-mlx-2bit"
 DEFAULT_UI_HOST = "127.0.0.1"
 DEFAULT_UI_PORT = 8080
@@ -277,6 +279,8 @@ class AppState:
                 )
             return {
                 "app_name": APP_NAME,
+                "app_version": APP_VERSION,
+                "app_signature": APP_SIGNATURE,
                 "model": self.config["model"],
                 "active_model": self._active_model or self.config["model"],
                 "trust_remote_code": bool(self.config.get("trust_remote_code", False)),
@@ -738,6 +742,8 @@ def main():
 
     print(f"\n{APP_NAME}")
     print("=" * 36)
+    print(f"  Version -> {APP_VERSION}")
+    print(f"  Signed by -> {APP_SIGNATURE}")
     print(f"  UI -> http://localhost:{state.ui_port}")
     print(f"  Model -> {state.config['model']}")
     print(f"  Idle sleep -> {state.config['idle_timeout_seconds']}s")

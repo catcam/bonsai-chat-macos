@@ -1,5 +1,9 @@
 # Bonsai Chat for macOS
 
+Version: `1.0.0`
+
+Signed by: `Nikša Barlović + Codex`
+
 Local chat UI for `mlx_lm.server` with:
 
 - model switching from the browser UI

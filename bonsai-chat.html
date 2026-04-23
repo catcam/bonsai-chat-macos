@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bonsai Local Chat</title>
+<title>Bonsai Local Chat v1.0.0</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#0a0a0f;color:#e8e8f0;font-family:'Courier New',monospace;height:100vh;display:flex;flex-direction:column}
@@ -12,6 +12,7 @@ header{padding:20px 28px 16px;border-bottom:1px solid #1a1a2e;flex-shrink:0}
 h1{font-size:22px;font-weight:bold;color:#fff}
 .bar{width:36px;height:2px;background:#ff6b35;margin-top:10px}
 .subhead{margin-top:10px;font-size:11px;color:#a9a9bc;line-height:1.6}
+.credit{margin-top:4px;font-size:10px;color:#7c7c92;line-height:1.5;letter-spacing:.08em;text-transform:uppercase}
 .status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#555;margin-left:10px;vertical-align:middle;transition:background .3s}
 .status-dot.on{background:#4ecdc4}
 .status-dot.warm{background:#ffb347}
@@ -79,6 +80,7 @@ footer{padding:14px 28px 18px;border-top:1px solid #1a1a2e;flex-shrink:0}
   <h1>BONSAI <span class="status-dot sleep" id="dot" title="server status"></span></h1>
   <div class="bar"></div>
   <div class="subhead" id="subhead">Current model: loading...</div>
+  <div class="credit" id="creditLine">Version 1.0.0 · Nikša Barlović + Codex</div>
 </header>
 
 <div id="messages"></div>
@@ -180,6 +182,7 @@ function syncConfig(config) {
   document.getElementById('modelInput').value = config.model || '';
   document.getElementById('idleInput').value = config.idle_timeout_seconds ?? 300;
   document.getElementById('subhead').textContent = `Current model: ${config.active_model || config.model || 'n/a'}`;
+  document.getElementById('creditLine').textContent = `Version ${config.app_version || '1.0.0'} · ${config.app_signature || 'Nikša Barlović + Codex'}`;
   setDot(config.mlx_status);
 
   let runtime = `MLX: ${config.mlx_status}`;
@@ -352,6 +355,7 @@ function applyDemoState() {
   setModelStatus('');
   if (!appConfig) {
     document.getElementById('subhead').textContent = `Current model: ${model}`;
+    document.getElementById('creditLine').textContent = 'Version 1.0.0 · Nikša Barlović + Codex';
     document.getElementById('runtimeInfo').textContent = 'MLX: running · demo mode preview';
     setDot('running');
   }
