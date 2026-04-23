@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.DS_Store
+
+build/
+build-app-v2/
+build-onefile/
+build-onefile-v2/
+dist/
+release/
+dmg-stage/
+pyi-specs/
+
+*.spec
