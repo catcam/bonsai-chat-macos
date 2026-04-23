@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="Bonsai app icon">
+  <rect width="1024" height="1024" fill="#ffffff"/>
+  <g fill="#111111" stroke="#111111" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M350 700h324l-26 118H376z" stroke-width="22"/>
+    <path d="M394 688c28-40 66-62 118-62s90 22 118 62" fill="none" stroke-width="30"/>
+    <path d="M510 662c-36-126 10-215 96-293" fill="none" stroke-width="54"/>
+    <path d="M520 595c18-76-4-142-56-210" fill="none" stroke-width="42"/>
+    <path d="M594 460c82-12 139-58 184-126" fill="none" stroke-width="34"/>
+    <path d="M486 464c-72-22-128-74-166-144" fill="none" stroke-width="30"/>
+    <path d="M548 382c16-74-2-136-50-188" fill="none" stroke-width="26"/>
+    <circle cx="510" cy="244" r="88"/>
+    <circle cx="388" cy="290" r="108"/>
+    <circle cx="640" cy="282" r="114"/>
+    <circle cx="294" cy="392" r="94"/>
+    <circle cx="486" cy="358" r="116"/>
+    <circle cx="706" cy="396" r="92"/>
+    <circle cx="590" cy="408" r="108"/>
+  </g>
+</svg>
