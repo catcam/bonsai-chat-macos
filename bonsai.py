@@ -20,7 +20,7 @@ from pathlib import Path
 
 
 APP_NAME = "BonsaiChat"
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.0.2"
 APP_SIGNATURE = "Nikša Barlović + Codex"
 DEFAULT_MODEL = "prism-ml/Ternary-Bonsai-8B-mlx-2bit"
 DEFAULT_UI_HOST = "127.0.0.1"

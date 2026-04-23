@@ -1,6 +1,6 @@
 # Bonsai Chat for macOS
 
-Version: `1.0.0`
+Version: `1.0.2`
 
 Signed by: `Nikša Barlović + Codex`
 

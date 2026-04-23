@@ -4,14 +4,25 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 RELEASE_DIR="$ROOT/release"
 SPEC_DIR="$ROOT/pyi-specs"
-DMG_STAGE="$ROOT/dmg-stage"
 ICON_SVG="$ROOT/assets/bonsai-app-icon.svg"
 ICON_PNG="$ROOT/assets/bonsai-app-icon-1024.png"
 ICONSET_DIR="$ROOT/assets/bonsai-app-icon.iconset"
 ICON_ICNS="$ROOT/assets/bonsai-app-icon.icns"
+TMP_ROOT="$(mktemp -d /tmp/bonsai-release.XXXXXX)"
+TMP_APP="$TMP_ROOT/BonsaiChat.app"
+DMG_STAGE="$TMP_ROOT/dmg-stage"
 
 mkdir -p "$RELEASE_DIR" "$SPEC_DIR"
-rm -rf "$ROOT/build-onefile-v2" "$ROOT/build-app-v2" "$DMG_STAGE"
+rm -rf "$ROOT/build-onefile-v2" "$ROOT/build-app-v2"
+trap 'rm -rf "$TMP_ROOT"' EXIT
+
+clear_xattrs() {
+  for path in "$@"; do
+    if [ -e "$path" ]; then
+      xattr -cr "$path" 2>/dev/null || true
+    fi
+  done
+}
 
 if [ -f "$ICON_SVG" ]; then
   rm -f "$ICON_PNG" "$ROOT/assets/bonsai-app-icon.svg.png"
@@ -38,6 +49,7 @@ if [ -f "$ICON_SVG" ]; then
   icon_png 1024 icon_512x512@2x.png
 
   iconutil -c icns "$ICONSET_DIR" -o "$ICON_ICNS"
+  clear_xattrs "$ICON_PNG" "$ICONSET_DIR" "$ICON_ICNS"
 fi
 
 ICON_ARGS=()
@@ -73,9 +85,15 @@ python3 -m PyInstaller \
   --collect-all huggingface_hub \
   "$ROOT/bonsai.py"
 
+clear_xattrs "$RELEASE_DIR/BonsaiChat-mac"
+rm -rf "$TMP_APP" "$DMG_STAGE"
+ditto "$RELEASE_DIR/BonsaiChat.app" "$TMP_APP"
+clear_xattrs "$TMP_APP"
+codesign --force --deep --sign - "$TMP_APP"
+codesign --verify --deep --strict --verbose=2 "$TMP_APP"
+
 mkdir -p "$DMG_STAGE"
-cp -R "$RELEASE_DIR/BonsaiChat.app" "$DMG_STAGE/"
-xattr -cr "$DMG_STAGE/BonsaiChat.app" || true
+cp -R "$TMP_APP" "$DMG_STAGE/"
 hdiutil create \
   -volname BonsaiChat \
   -srcfolder "$DMG_STAGE" \
