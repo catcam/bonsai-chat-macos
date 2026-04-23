@@ -372,6 +372,17 @@ class AppState:
         with self._lifecycle_lock:
             self._start_mlx_locked()
 
+    def _wait_for_mlx_exit(self, proc, timeout: int) -> bool:
+        try:
+            proc.wait(timeout=timeout)
+            return True
+        except subprocess.TimeoutExpired:
+            return False
+        except KeyboardInterrupt:
+            # During shutdown we prefer a clean exit over surfacing another Ctrl+C
+            # from the terminal while waiting on the child process to stop.
+            return proc.poll() is not None
+
     def _stop_mlx_locked(self, reason: str):
         with self._lock:
             proc = self._mlx_proc
@@ -382,12 +393,16 @@ class AppState:
 
         if proc is not None:
             self._write_log_line(f"Stopping MLX ({reason}).")
-            proc.terminate()
             try:
-                proc.wait(timeout=10)
-            except subprocess.TimeoutExpired:
-                proc.kill()
-                proc.wait(timeout=5)
+                proc.terminate()
+            except OSError:
+                pass
+            if not self._wait_for_mlx_exit(proc, timeout=10):
+                try:
+                    proc.kill()
+                except OSError:
+                    pass
+                self._wait_for_mlx_exit(proc, timeout=5)
 
         if log_handle is not None:
             log_handle.close()
