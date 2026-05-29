@@ -20,7 +20,7 @@ from pathlib import Path
 
 
 APP_NAME = "BonsaiChat"
-APP_VERSION = "1.0.2"
+APP_VERSION = "1.1.0"
 APP_SIGNATURE = "Nikša Barlović + Codex"
 DEFAULT_MODEL = "prism-ml/Ternary-Bonsai-8B-mlx-2bit"
 DEFAULT_UI_HOST = "127.0.0.1"
@@ -28,6 +28,23 @@ DEFAULT_UI_PORT = 8080
 DEFAULT_MLX_HOST = "127.0.0.1"
 DEFAULT_MLX_PORT = 8079
 DEFAULT_IDLE_TIMEOUT_SECONDS = 300
+
+PRESET_MODELS = [
+    {
+        "id": "prism-ml/Ternary-Bonsai-8B-mlx-2bit",
+        "label": "Bonsai 8B",
+        "description": "Text · 8B · ternary 2-bit · fast",
+        "vision": False,
+    },
+    {
+        "id": "prism-ml/bonsai-image-ternary-4B-mlx-2bit",
+        "label": "Bonsai 4B Vision",
+        "description": "Text + Image · 4B · ternary 2-bit",
+        "vision": True,
+    },
+]
+
+VISION_MODEL_HINTS = ("image", "vision", "vl-", "-vl", "vlm", "4b-mlx")
 MLX_STARTUP_TIMEOUT_SECONDS = 300
 
 
@@ -52,6 +69,11 @@ def utc_timestamp() -> str:
 
 def shell_join(parts) -> str:
     return " ".join(shlex.quote(part) for part in parts)
+
+
+def is_vision_model(model_id: str) -> bool:
+    lower = model_id.lower()
+    return any(hint in lower for hint in VISION_MODEL_HINTS)
 
 
 def normalize_command(parts):
@@ -216,11 +238,11 @@ class AppState:
             unique.append(candidate)
         return unique
 
-    def _resolve_mlx_command(self, explicit: str = ""):
+    def _resolve_mlx_command(self, explicit: str = "", vision: bool = False):
         candidates = []
         seen = set()
 
-        def add(parts, source, needs_module=False):
+        def add(parts, source, needs_module=None):
             parts = normalize_command(parts)
             if not parts:
                 return
@@ -230,7 +252,7 @@ class AppState:
             seen.add(key)
             if not command_exists(parts):
                 return
-            if needs_module and not python_has_module(parts[0], "mlx_lm.server"):
+            if needs_module and not python_has_module(parts[0], needs_module):
                 return
             candidates.append((parts, source))
 
@@ -239,6 +261,18 @@ class AppState:
         env_command = os.environ.get("BONSAI_MLX_SERVER")
         if env_command:
             add(shlex.split(env_command), "BONSAI_MLX_SERVER")
+
+        if vision:
+            # Try mlx_vlm.server first for vision/image models
+            on_path = shutil.which("mlx_vlm.server")
+            if on_path:
+                add([on_path], "PATH (vlm)")
+            for match in sorted(
+                glob.glob(str(Path.home() / "Library" / "Python" / "*" / "bin" / "mlx_vlm.server"))
+            ):
+                add([match], "Library/Python (vlm)")
+            for python_bin in self._python_candidates():
+                add([python_bin, "-m", "mlx_vlm.server"], f"{Path(python_bin).name} -m (vlm)", "mlx_vlm.server")
 
         on_path = shutil.which("mlx_lm.server")
         if on_path:
@@ -250,7 +284,7 @@ class AppState:
             add([match], "Library/Python")
 
         for python_bin in self._python_candidates():
-            add([python_bin, "-m", "mlx_lm.server"], f"{Path(python_bin).name} -m", True)
+            add([python_bin, "-m", "mlx_lm.server"], f"{Path(python_bin).name} -m", "mlx_lm.server")
 
         if not candidates:
             raise RuntimeError(
@@ -294,10 +328,12 @@ class AppState:
                 "log_path": str(self.log_path),
                 "ui_url": f"http://localhost:{self.ui_port}",
                 "supports_online_lookup": True,
+                "is_vision_model": is_vision_model(self._active_model or self.config["model"]),
             }
 
     def _build_launch_command(self):
-        command, source = self._resolve_mlx_command(self.config.get("mlx_command", ""))
+        vision = is_vision_model(self.config["model"])
+        command, source = self._resolve_mlx_command(self.config.get("mlx_command", ""), vision=vision)
         full_command = list(command) + [
             "--model",
             self.config["model"],
@@ -633,6 +669,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
         if parsed.path == "/bonsai/config":
             self.send_json(200, self.state.snapshot())
+            return
+
+        if parsed.path == "/bonsai/presets":
+            self.send_json(200, {"presets": PRESET_MODELS})
             return
 
         if parsed.path == "/bonsai/search-models":
