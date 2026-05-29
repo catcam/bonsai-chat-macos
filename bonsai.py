@@ -238,7 +238,7 @@ class AppState:
             unique.append(candidate)
         return unique
 
-    def _resolve_mlx_command(self, explicit: str = "", vision: bool = False):
+    def _resolve_mlx_command(self, explicit: str = "", vision: bool = False):  # noqa: ARG002
         candidates = []
         seen = set()
 
@@ -256,23 +256,12 @@ class AppState:
                 return
             candidates.append((parts, source))
 
+
         if explicit:
             add(shlex.split(explicit), "saved config")
         env_command = os.environ.get("BONSAI_MLX_SERVER")
         if env_command:
             add(shlex.split(env_command), "BONSAI_MLX_SERVER")
-
-        if vision:
-            # Try mlx_vlm.server first for vision/image models
-            on_path = shutil.which("mlx_vlm.server")
-            if on_path:
-                add([on_path], "PATH (vlm)")
-            for match in sorted(
-                glob.glob(str(Path.home() / "Library" / "Python" / "*" / "bin" / "mlx_vlm.server"))
-            ):
-                add([match], "Library/Python (vlm)")
-            for python_bin in self._python_candidates():
-                add([python_bin, "-m", "mlx_vlm.server"], f"{Path(python_bin).name} -m (vlm)", "mlx_vlm.server")
 
         on_path = shutil.which("mlx_lm.server")
         if on_path:
