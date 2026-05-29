@@ -68,11 +68,6 @@ footer{padding:14px 28px 18px;border-top:1px solid #1a1a2e;flex-shrink:0}
 .preset-btn{background:#0d0d16;color:#8888a8;border:1px solid #1a1a2e;padding:7px 12px;font-family:'Courier New',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:all .15s}
 .preset-btn:hover{border-color:#ff6b35;color:#fff}
 .preset-btn.active{background:#1a1a2e;color:#ff6b35;border-color:#ff6b35}
-.attach-btn{background:#11111a;color:#8888a8;border:1px solid #1a1a2e;padding:0 13px;font-family:'Courier New',monospace;font-size:13px;cursor:pointer;height:42px;transition:all .15s;flex-shrink:0}
-.attach-btn:hover{border-color:#ff6b35;color:#ff6b35}
-.attach-btn.has-image{border-color:#4ecdc4;color:#4ecdc4;background:#081818}
-.image-preview{max-width:200px;max-height:120px;border:1px solid #1a1a2e;border-radius:2px;margin-top:6px;display:block}
-.msg-image{max-width:200px;max-height:140px;border:1px solid #2a2a4e;border-radius:2px;margin-bottom:6px;display:block}
 
 @media (max-width:720px){
   header,footer,#messages{padding-left:16px;padding-right:16px}
@@ -125,14 +120,8 @@ footer{padding:14px 28px 18px;border-top:1px solid #1a1a2e;flex-shrink:0}
   <div class="results" id="searchResults"></div>
 
   <div class="input-row">
-    <button id="attachBtn" class="attach-btn" title="Attach image (vision model only)" onclick="triggerImagePick()" style="display:none">📎</button>
     <textarea id="prompt" placeholder="Type a message..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
     <button id="send" onclick="sendMessage()">SEND</button>
-  </div>
-  <input type="file" id="imageInput" accept="image/*" style="display:none" onchange="onImagePicked(this)">
-  <div id="imagePreviewWrap" style="display:none">
-    <img id="imagePreview" class="image-preview" src="" alt="attached image">
-    <button class="btn" style="margin-top:4px;font-size:9px" onclick="clearImage()">REMOVE IMAGE</button>
   </div>
   <div class="hint">Enter = send · Shift+Enter = newline</div>
 </footer>
@@ -142,7 +131,6 @@ const history = [];
 let streaming = false;
 let appConfig = null;
 let lastModelInfo = null;
-let pendingImageDataUrl = null;
 const params = new URLSearchParams(window.location.search);
 let demoApplied = false;
 
@@ -216,14 +204,9 @@ function syncConfig(config) {
 
   if (config.last_error) setError(config.last_error);
 
-  // Highlight active preset
   document.querySelectorAll('.preset-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.modelId === (config.active_model || config.model));
   });
-
-  // Show attach button only for vision models
-  const attachBtn = document.getElementById('attachBtn');
-  if (attachBtn) attachBtn.style.display = config.is_vision_model ? 'inline-block' : 'none';
 }
 
 function autoResize(el) {
@@ -238,16 +221,10 @@ function handleKey(event) {
   }
 }
 
-function addMsg(role, content, streamingMsg = false, imageDataUrl = null) {
+function addMsg(role, content, streamingMsg = false) {
   const div = document.createElement('div');
   div.className = `msg ${role}${streamingMsg ? ' streaming' : ''}`;
   div.innerHTML = `<div class="role">${role === 'user' ? 'YOU' : 'BONSAI'}</div><span class="content"></span>`;
-  if (imageDataUrl) {
-    const img = document.createElement('img');
-    img.className = 'msg-image';
-    img.src = imageDataUrl;
-    div.querySelector('.role').insertAdjacentElement('afterend', img);
-  }
   div.querySelector('.content').textContent = content;
   if (streamingMsg) div.querySelector('.content').insertAdjacentHTML('afterend', '<span class="cursor"></span>');
   document.getElementById('messages').appendChild(div);
@@ -275,30 +252,6 @@ async function loadPresets() {
   } catch {}
 }
 
-function triggerImagePick() {
-  document.getElementById('imageInput').click();
-}
-
-function onImagePicked(input) {
-  const file = input.files && input.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    pendingImageDataUrl = e.target.result;
-    const preview = document.getElementById('imagePreview');
-    preview.src = pendingImageDataUrl;
-    document.getElementById('imagePreviewWrap').style.display = 'block';
-    document.getElementById('attachBtn').classList.add('has-image');
-  };
-  reader.readAsDataURL(file);
-}
-
-function clearImage() {
-  pendingImageDataUrl = null;
-  document.getElementById('imageInput').value = '';
-  document.getElementById('imagePreviewWrap').style.display = 'none';
-  document.getElementById('attachBtn').classList.remove('has-image');
-}
 
 function scrollBottom() {
   const messages = document.getElementById('messages');
@@ -546,27 +499,14 @@ async function sendMessage() {
 
   const textarea = document.getElementById('prompt');
   const text = textarea.value.trim();
-  if (!text && !pendingImageDataUrl) return;
+  if (!text) return;
 
   setError('');
   textarea.value = '';
   textarea.style.height = 'auto';
 
-  const imageUrl = pendingImageDataUrl;
-  clearImage();
-
-  addMsg('user', text, false, imageUrl);
-
-  let userContent;
-  if (imageUrl) {
-    userContent = [
-      {type: 'image_url', image_url: {url: imageUrl}},
-      {type: 'text', text: text || 'What do you see in this image?'},
-    ];
-  } else {
-    userContent = text;
-  }
-  history.push({role: 'user', content: userContent});
+  addMsg('user', text);
+  history.push({role: 'user', content: text});
 
   const sendBtn = document.getElementById('send');
   sendBtn.disabled = true;

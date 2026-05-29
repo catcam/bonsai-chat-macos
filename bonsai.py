@@ -33,18 +33,14 @@ PRESET_MODELS = [
     {
         "id": "prism-ml/Ternary-Bonsai-8B-mlx-2bit",
         "label": "Bonsai 8B",
-        "description": "Text · 8B · ternary 2-bit · fast",
-        "vision": False,
+        "description": "8B · ternary 2-bit · ~2.5GB",
     },
     {
-        "id": "prism-ml/bonsai-image-ternary-4B-mlx-2bit",
-        "label": "Bonsai 4B Vision",
-        "description": "Text + Image · 4B · ternary 2-bit",
-        "vision": True,
+        "id": "prism-ml/Ternary-Bonsai-4B-mlx-2bit",
+        "label": "Bonsai 4B",
+        "description": "4B · ternary 2-bit · ~1.2GB · faster",
     },
 ]
-
-VISION_MODEL_HINTS = ("image", "vision", "vl-", "-vl", "vlm", "4b-mlx")
 MLX_STARTUP_TIMEOUT_SECONDS = 300
 
 
@@ -70,10 +66,6 @@ def utc_timestamp() -> str:
 def shell_join(parts) -> str:
     return " ".join(shlex.quote(part) for part in parts)
 
-
-def is_vision_model(model_id: str) -> bool:
-    lower = model_id.lower()
-    return any(hint in lower for hint in VISION_MODEL_HINTS)
 
 
 def normalize_command(parts):
@@ -238,7 +230,7 @@ class AppState:
             unique.append(candidate)
         return unique
 
-    def _resolve_mlx_command(self, explicit: str = "", vision: bool = False):  # noqa: ARG002
+    def _resolve_mlx_command(self, explicit: str = ""):
         candidates = []
         seen = set()
 
@@ -317,12 +309,10 @@ class AppState:
                 "log_path": str(self.log_path),
                 "ui_url": f"http://localhost:{self.ui_port}",
                 "supports_online_lookup": True,
-                "is_vision_model": is_vision_model(self._active_model or self.config["model"]),
             }
 
     def _build_launch_command(self):
-        vision = is_vision_model(self.config["model"])
-        command, source = self._resolve_mlx_command(self.config.get("mlx_command", ""), vision=vision)
+        command, source = self._resolve_mlx_command(self.config.get("mlx_command", ""))
         full_command = list(command) + [
             "--model",
             self.config["model"],
