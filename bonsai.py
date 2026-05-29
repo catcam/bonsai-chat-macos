@@ -21,7 +21,7 @@ from pathlib import Path
 
 APP_NAME = "BonsaiChat"
 APP_VERSION = "1.1.0"
-APP_SIGNATURE = "Nikša Barlović + Codex"
+APP_SIGNATURE = "Nikša Barlović + Codex + Claude"
 DEFAULT_MODEL = "prism-ml/Ternary-Bonsai-8B-mlx-2bit"
 DEFAULT_UI_HOST = "127.0.0.1"
 DEFAULT_UI_PORT = 8080
